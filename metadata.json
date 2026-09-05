@@ -1,0 +1,6 @@
+{
+  "name": "Quantum Hybrid File System & Earth Peace Network",
+  "description": "Quantum-classical hybrid file system with QRAM tiering, Earth Peace post-quantum cryptography, carbon credit DEX tokenomics, and quantum cloud functions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
