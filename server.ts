@@ -675,6 +675,7 @@ app.post("/api/github/save-files", async (req, res) => {
 app.get("/api/project/exportable-files", async (req, res) => {
   const fileList = [
     "render.yaml",
+    "Render.yaml",
     "RENDER.md",
     "Dockerfile",
     ".dockerignore",
@@ -701,6 +702,90 @@ app.get("/api/project/exportable-files", async (req, res) => {
   }
 
   res.json({ files: exportFiles });
+});
+
+// 8. Dedicated Quick-Fix: Commit render.yaml directly to GitHub Repo Root
+app.post("/api/github/commit-render-yaml", async (req, res) => {
+  const { token, owner, repo, branch = "main" } = req.body;
+  if (!token || !owner || !repo) {
+    return res.status(400).json({ error: "Missing required parameters (token, owner, repo)" });
+  }
+
+  try {
+    const yamlPath = path.join(process.cwd(), "render.yaml");
+    if (!fs.existsSync(yamlPath)) {
+      return res.status(500).json({ error: "Local render.yaml not found on server" });
+    }
+    const yamlContent = fs.readFileSync(yamlPath, "utf-8");
+    const base64Content = Buffer.from(yamlContent).toString("base64");
+
+    // Target files: both lowercase render.yaml (Render standard) and uppercase Render.yaml
+    const targets = ["render.yaml", "Render.yaml"];
+    const results: any[] = [];
+
+    // Attempt to commit to specified branch; if 404, fallback to master or default
+    let targetBranch = branch;
+    const repoInfoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: { Authorization: `Bearer ${token}`, "User-Agent": "Quantum-Hybrid-File-System" },
+    });
+    if (repoInfoRes.ok) {
+      const repoInfo = await repoInfoRes.json();
+      targetBranch = repoInfo.default_branch || branch;
+    }
+
+    for (const fileName of targets) {
+      let existingSha: string | undefined = undefined;
+      try {
+        const checkRes = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/contents/${fileName}?ref=${targetBranch}`,
+          {
+            headers: { Authorization: `Bearer ${token}`, "User-Agent": "Quantum-Hybrid-File-System" },
+          }
+        );
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          existingSha = checkData.sha;
+        }
+      } catch (e) {
+        // Not found yet
+      }
+
+      const putRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${fileName}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "User-Agent": "Quantum-Hybrid-File-System",
+        },
+        body: JSON.stringify({
+          message: `Add ${fileName} for Render Blueprint deployment`,
+          content: base64Content,
+          branch: targetBranch,
+          ...(existingSha ? { sha: existingSha } : {}),
+        }),
+      });
+
+      const putData = await putRes.json();
+      results.push({
+        file: fileName,
+        success: putRes.ok,
+        branch: targetBranch,
+        commitUrl: putData.commit?.html_url,
+        fileUrl: putData.content?.html_url,
+        error: putRes.ok ? null : putData.message,
+      });
+    }
+
+    res.json({
+      success: results.some((r) => r.success),
+      branch: targetBranch,
+      repoUrl: `https://github.com/${owner}/${repo}`,
+      results,
+    });
+  } catch (error: any) {
+    console.error("Commit render.yaml error:", error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ==========================================
