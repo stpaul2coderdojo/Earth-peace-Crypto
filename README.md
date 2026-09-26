@@ -1,14 +1,32 @@
 # Quantum Hybrid File System (QHFS) & Earth Peace Quantum Network
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22344788.svg)](https://doi.org/10.5281/zenodo.22344788)
 [![Post-Quantum Security](https://img.shields.io/badge/Security-NIST_Level_5_Kyber--1024-cyan?style=for-the-badge&logo=shield)](https://csrc.nist.gov/Projects/post-quantum-cryptography)
 [![Quantum Memory](https://img.shields.io/badge/Architecture-3--Tier_QRAM_%2B_Cryo--NVMe-blue?style=for-the-badge&logo=atom)](https://github.com)
-[![IPFS Content Addressed](https://img.shields.io/badge/Storage-IPFS_QCID_Content--Addressed-emerald?style=for-the-badge&logo=ipfs)](https://ipfs.tech)
+[![q-IPFS Storage](https://img.shields.io/badge/Storage-q--IPFS_QCID_Content--Addressed-emerald?style=for-the-badge&logo=ipfs)](https://ipfs.tech)
 [![Carbon Pegged](https://img.shields.io/badge/Carbon_Credit-1:1_tCO2e_CQB_Peg-green?style=for-the-badge&logo=leaf)](https://github.com)
-[![Quantum Cloud](https://img.shields.io/badge/Serverless-Quantum_Cloud_Functions_(QCF)-purple?style=for-the-badge&logo=serverless)](https://github.com)
+[![Code Units & NFTs](https://img.shields.io/badge/Landscape_Architecture-Code_Units_(C.U.)_%26_NFTs-indigo?style=for-the-badge&logo=tree)](/docs/CODE_UNITS_AND_LANDSCAPE_NFTS.md)
 
-A state-of-the-art **Quantum-Classical Hybrid File System (QHFS)** integrated with **Earth Peace Quantum Cryptography (EPQC)**, **Planetary IPFS Node Storage**, **Carbon Credit Tokenomics (CQB)**, and **Serverless Quantum Cloud Functions (QCF)**.
+A state-of-the-art **Quantum-Classical Hybrid File System (QHFS)** integrated with **Earth Peace Quantum Cryptography (EPQC)**, **Planetary q-IPFS Node Storage**, **Carbon Credit Tokenomics (CQB)**, **Code Units (C.U.)**, and **NFTs in Landscape Architecture**.
 
-Designed around the pioneering quantum information paper and code units, this system bridges sub-nanosecond coherent quantum states (qubits) with durable post-quantum classical infrastructure across a planetary mesh of quantum nodes.
+> ### 📖 Primary Scientific Citation
+> ```bibtex
+> @article{bheemaiah2026earthpeace,
+>   author    = {A. K. Dr Bheemaiah},
+>   title     = {Earth Peace Coin, q-IPFS, Code Units (C.U.) and NFTs in Landscape Architecture},
+>   journal   = {Zenodo},
+>   year      = {2026},
+>   month     = {sep},
+>   day       = {05},
+>   doi       = {10.5281/zenodo.22344788},
+>   url       = {https://doi.org/10.5281/zenodo.22344788}
+> }
+> ```
+> **IEEE Reference:**  
+> [1] A. K. Dr Bheemaiah, ‘Earth Peace Coin, q-IPFS, Code Units (C.U.) and NFTs in Landscape Architecture’, Sep. 05, 2026, Zenodo. doi: [10.5281/zenodo.22344788](https://doi.org/10.5281/zenodo.22344788).
+>
+> 📄 Read the full paper architecture: [`docs/CODE_UNITS_AND_LANDSCAPE_NFTS.md`](docs/CODE_UNITS_AND_LANDSCAPE_NFTS.md)
+
 
 ---
 
@@ -247,13 +265,25 @@ npm run start
 
 ## 📜 Scientific Foundations & Code Units
 
-This implementation is directly grounded in peer-reviewed quantum computing and cryptography foundations:
+This implementation is directly grounded in peer-reviewed quantum computing, cryptography, and ecological tokenomics foundations:
 
-1. **Unit 1: Quantum Random Access Memory (QRAM)** - Giovannetti, Lloyd, Maccone (PRL).
-2. **Unit 2: Surface Code Quantum Error Correction (QEC)** - Fowler et al. (PRA).
-3. **Unit 3: BB84 Quantum Key Distribution** - Bennett & Brassard (IEEE).
-4. **Unit 4: NIST Post-Quantum Cryptography Standard** - FIPS 203 (ML-KEM / CRYSTALS-Kyber) & FIPS 204 (ML-DSA / CRYSTALS-Dilithium).
-5. **Unit 5: Content-Addressed Quantum Merkle DAGs** - InterPlanetary File System (IPFS) & Quantum Information Networks.
+1. **Primary Landmark Paper**: **A. K. Dr Bheemaiah**, *‘Earth Peace Coin, q-IPFS, Code Units (C.U.) and NFTs in Landscape Architecture’*, Sep. 05, 2026, Zenodo. [doi: 10.5281/zenodo.22344788](https://doi.org/10.5281/zenodo.22344788).
+2. **Unit 1: Quantum Random Access Memory (QRAM)** - Giovannetti, Lloyd, Maccone (PRL).
+3. **Unit 2: Surface Code Quantum Error Correction (QEC)** - Fowler et al. (PRA).
+4. **Unit 3: BB84 Quantum Key Distribution** - Bennett & Brassard (IEEE).
+5. **Unit 4: NIST Post-Quantum Cryptography Standard** - FIPS 203 (ML-KEM / CRYSTALS-Kyber) & FIPS 204 (ML-DSA / CRYSTALS-Dilithium).
+6. **Unit 5: Content-Addressed Quantum Merkle DAGs (q-IPFS)** - InterPlanetary File System (IPFS) & Quantum Information Networks.
+7. **Unit 6: Code Units (C.U.) Metric & Landscape Architecture NFTs** - Spatial multi-physics simulation, biophilic ecological digital twins, and verifiable post-quantum proof certificates.
+
+---
+
+## 🏛️ Code Units (C.U.) & Landscape Architecture NFTs
+
+Following the mathematical formulations defined by Dr. Bheemaiah:
+- **Code Unit (1 C.U.)**: Represents a calibrated composite work metric combining $10^4$ quantum 2-qubit entangling gate operations with $100\,\text{m}^2$ of sub-meter ecological spatial mesh resolution.
+- **q-IPFS Storage**: Landscape architecture 3D models (`.las`, `.ifc`, GIS shapefiles, and hydrological catchment meshes) are content-addressed as Merkle DAGs (`bafy2bzace...`) protected by CRYSTALS-Kyber-1024.
+- **Dynamic Landscape NFTs (LA-NFTs)**: Tokenized ecological parcels (urban biophilic corridors, coastal mangrove blue carbon, peatland carbon sinks, and agroforestry matrices) with real-time carbon sequestration rates, Shannon biodiversity indices ($H'$), and stormwater retention telemetry.
+
 
 ---
 
