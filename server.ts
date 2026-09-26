@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
@@ -7,7 +8,7 @@ import { GoogleGenAI } from "@google/genai";
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -304,6 +305,403 @@ function generateFallbackQuantumResponse(prompt: string, mode: string, context: 
 - **Planetary Carbon Ledger**: Active liquidity pool \`$EPQC / $CQB\` operating with automated invariant $k = x \\cdot y$. 428,950 Verified Carbon Units anchored in quantum state registries.
 - **Quantum Cloud Functions (QCF)**: Serverless quantum dispatch ready. Grover search algorithms demonstrate $\\mathcal{O}(\\sqrt{N})$ query speedup across 1.2M hybrid file descriptors.`;
 }
+
+// ==========================================
+// GitHub OAuth & Save Repository APIs
+// ==========================================
+
+// 1. Get GitHub OAuth URL
+app.get("/api/auth/github/url", (req, res) => {
+  const clientId = process.env.GITHUB_CLIENT_ID || process.env.CLIENT_ID;
+  const rawRedirectUri = (req.query.redirect_uri as string) || `${req.protocol}://${req.get("host")}/auth/github/callback`;
+  // Clean redirect URI
+  const redirectUri = rawRedirectUri.split("?")[0];
+
+  if (!clientId) {
+    return res.json({
+      configured: false,
+      redirectUri,
+      message: "GITHUB_CLIENT_ID is not configured yet. You can also connect directly with a Personal Access Token with repo permission.",
+    });
+  }
+
+  const scope = "repo,read:user,user:email";
+  const state = Math.random().toString(36).substring(2);
+  const authUrl = `https://github.com/login/oauth/authorize?client_id=${encodeURIComponent(
+    clientId
+  )}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${encodeURIComponent(state)}`;
+
+  res.json({
+    configured: true,
+    url: authUrl,
+    redirectUri,
+    state,
+  });
+});
+
+// 2. GitHub OAuth Callback (Popup redirect landing page)
+app.get(["/auth/github/callback", "/auth/github/callback/"], async (req, res) => {
+  const { code, state, error, error_description } = req.query;
+
+  if (error || !code) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>GitHub Authorization Error</title>
+          <style>
+            body { background: #020617; color: #f87171; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 28px; max-width: 440px; text-align: center; }
+            button { background: #334155; color: #f8fafc; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 16px; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h3 style="color:#ef4444;margin-top:0;">GitHub Authorization Failed</h3>
+            <p style="color:#94a3b8;font-size:14px;">${error_description || error || "No authorization code provided."}</p>
+            <button onclick="window.close()">Close Window</button>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+
+  const clientId = process.env.GITHUB_CLIENT_ID || process.env.CLIENT_ID;
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET || process.env.CLIENT_SECRET;
+
+  try {
+    const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+      }),
+    });
+
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData.access_token;
+
+    if (!accessToken) {
+      throw new Error(tokenData.error_description || tokenData.error || "Failed to exchange authorization code for token");
+    }
+
+    // Query user profile & permissions
+    const userRes = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "User-Agent": "Quantum-Hybrid-File-System",
+      },
+    });
+
+    const userData = await userRes.json();
+    const scopesHeader = userRes.headers.get("x-oauth-scopes") || "repo";
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>GitHub Authorization Complete</title>
+          <style>
+            body { background: #020617; color: #38bdf8; font-family: system-ui, -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 32px; max-width: 440px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+            .badge { display: inline-block; background: #052e16; color: #4ade80; border: 1px solid #166534; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+            code { background: #1e293b; color: #7dd3fc; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <span class="badge">✓ Permission Granted: repo</span>
+            <h3 style="color:#ffffff;margin:8px 0 12px 0;font-size:20px;">Connected to GitHub</h3>
+            <p style="color:#94a3b8;font-size:14px;line-height:1.5;">
+              Authenticated as <strong style="color:#f8fafc;">@${userData.login || "user"}</strong> with write permission to save repositories.
+            </p>
+            <p style="color:#64748b;font-size:12px;margin-top:20px;">
+              Closing popup and synchronizing with Quantum Hybrid File System...
+            </p>
+          </div>
+          <script>
+            const authPayload = {
+              type: 'GITHUB_AUTH_SUCCESS',
+              token: ${JSON.stringify(accessToken)},
+              user: ${JSON.stringify(userData)},
+              scopes: ${JSON.stringify(scopesHeader)}
+            };
+            if (window.opener) {
+              window.opener.postMessage(authPayload, '*');
+              setTimeout(() => window.close(), 700);
+            } else {
+              window.location.href = '/';
+            }
+          </script>
+        </body>
+      </html>
+    `);
+  } catch (err: any) {
+    console.error("GitHub OAuth Callback Error:", err);
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>GitHub Exchange Error</title>
+          <style>
+            body { background: #020617; color: #f87171; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 28px; max-width: 440px; text-align: center; }
+            button { background: #334155; color: #f8fafc; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-top: 16px; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <h3 style="color:#ef4444;margin-top:0;">Failed to Authorize GitHub</h3>
+            <p style="color:#94a3b8;font-size:14px;">${err.message || "An unexpected error occurred during token exchange."}</p>
+            <button onclick="window.close()">Close Window</button>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+});
+
+// 3. Verify Token and Scopes (Supports both OAuth token and Personal Access Token)
+app.post("/api/github/verify-token", async (req, res) => {
+  const token = req.body.token || req.headers.authorization?.replace("Bearer ", "");
+  if (!token) {
+    return res.status(400).json({ valid: false, error: "No token provided" });
+  }
+
+  try {
+    const userRes = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "User-Agent": "Quantum-Hybrid-File-System",
+      },
+    });
+
+    if (!userRes.ok) {
+      const err = await userRes.json();
+      return res.status(userRes.status).json({
+        valid: false,
+        error: err.message || "Invalid or expired GitHub token",
+      });
+    }
+
+    const user = await userRes.json();
+    const scopesHeader = userRes.headers.get("x-oauth-scopes") || "";
+    const scopes = scopesHeader.split(",").map((s) => s.trim()).filter(Boolean);
+    
+    // Check if user has repo permissions
+    const hasRepoPermission =
+      scopes.includes("repo") ||
+      scopes.includes("public_repo") ||
+      scopes.length === 0; // Fine-grained tokens don't return x-oauth-scopes header
+
+    res.json({
+      valid: true,
+      user: {
+        login: user.login,
+        name: user.name || user.login,
+        avatar_url: user.avatar_url,
+        html_url: user.html_url,
+        public_repos: user.public_repos,
+        total_private_repos: user.total_private_repos,
+      },
+      scopes,
+      scopesRaw: scopesHeader,
+      hasRepoPermission,
+    });
+  } catch (error: any) {
+    console.error("Token verification error:", error);
+    res.status(500).json({ valid: false, error: error.message });
+  }
+});
+
+// 4. List User Repositories
+app.post("/api/github/repos", async (req, res) => {
+  const token = req.body.token || req.headers.authorization?.replace("Bearer ", "");
+  if (!token) return res.status(401).json({ error: "Token required" });
+
+  try {
+    const reposRes = await fetch("https://api.github.com/user/repos?sort=updated&per_page=30&affiliation=owner,collaborator", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "User-Agent": "Quantum-Hybrid-File-System",
+      },
+    });
+
+    if (!reposRes.ok) {
+      const err = await reposRes.json();
+      return res.status(reposRes.status).json({ error: err.message });
+    }
+
+    const repos = await reposRes.json();
+    res.json({
+      repos: repos.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        full_name: r.full_name,
+        private: r.private,
+        html_url: r.html_url,
+        default_branch: r.default_branch || "main",
+        updated_at: r.updated_at,
+      })),
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 5. Create New Repository on GitHub
+app.post("/api/github/create-repo", async (req, res) => {
+  const { token, name, description, isPrivate = false, autoInit = true } = req.body;
+  if (!token || !name) {
+    return res.status(400).json({ error: "Token and repository name are required" });
+  }
+
+  try {
+    const createRes = await fetch("https://api.github.com/user/repos", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "User-Agent": "Quantum-Hybrid-File-System",
+      },
+      body: JSON.stringify({
+        name: name.trim().replace(/\s+/g, "-"),
+        description: description || "Quantum Hybrid File System & Earth Peace Network with Render deployment config",
+        private: isPrivate,
+        auto_init: autoInit,
+      }),
+    });
+
+    const data = await createRes.json();
+    if (!createRes.ok) {
+      return res.status(createRes.status).json({ error: data.message || "Failed to create repository" });
+    }
+
+    res.json({
+      success: true,
+      repo: {
+        id: data.id,
+        name: data.name,
+        full_name: data.full_name,
+        html_url: data.html_url,
+        clone_url: data.clone_url,
+        default_branch: data.default_branch || "main",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 6. Save / Commit Files to GitHub Repository
+app.post("/api/github/save-files", async (req, res) => {
+  const { token, owner, repo, branch = "main", files = [], commitMessage } = req.body;
+  if (!token || !owner || !repo || !files.length) {
+    return res.status(400).json({ error: "Missing required fields (token, owner, repo, files)" });
+  }
+
+  const results: any[] = [];
+
+  try {
+    for (const f of files) {
+      const filePath = f.path.replace(/^\/+/, "");
+      let existingSha: string | undefined = undefined;
+
+      // 1. Check if file already exists on GitHub to obtain its SHA
+      try {
+        const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "User-Agent": "Quantum-Hybrid-File-System",
+          },
+        });
+        if (getRes.ok) {
+          const getData = await getRes.json();
+          existingSha = getData.sha;
+        }
+      } catch (err) {
+        // File does not exist yet; continue to create
+      }
+
+      // 2. Put file contents (base64 encoded)
+      const base64Content = Buffer.from(f.content || "").toString("base64");
+      const putRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "User-Agent": "Quantum-Hybrid-File-System",
+        },
+        body: JSON.stringify({
+          message: commitMessage || `Save ${filePath} via Quantum Hybrid File System`,
+          content: base64Content,
+          branch,
+          ...(existingSha ? { sha: existingSha } : {}),
+        }),
+      });
+
+      const putData = await putRes.json();
+      if (!putRes.ok) {
+        results.push({ path: filePath, success: false, error: putData.message });
+      } else {
+        results.push({
+          path: filePath,
+          success: true,
+          commitSha: putData.commit?.sha,
+          html_url: putData.content?.html_url,
+        });
+      }
+    }
+
+    const allSucceeded = results.every((r) => r.success);
+    res.json({
+      success: allSucceeded,
+      repoUrl: `https://github.com/${owner}/${repo}`,
+      branch,
+      results,
+    });
+  } catch (error: any) {
+    console.error("Save to GitHub error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 7. Get Workspace Files for 1-Click Export to GitHub
+app.get("/api/project/exportable-files", async (req, res) => {
+  const fileList = [
+    "render.yaml",
+    "RENDER.md",
+    "Dockerfile",
+    ".dockerignore",
+    "package.json",
+    "tsconfig.json",
+    "vite.config.ts",
+    "index.html",
+    "server.ts",
+    "README.md",
+  ];
+
+  const exportFiles: { path: string; content: string }[] = [];
+
+  for (const relPath of fileList) {
+    try {
+      const fullPath = path.join(process.cwd(), relPath);
+      if (fs.existsSync(fullPath)) {
+        const content = fs.readFileSync(fullPath, "utf-8");
+        exportFiles.push({ path: relPath, content });
+      }
+    } catch (e) {
+      // Ignore missing optional files
+    }
+  }
+
+  res.json({ files: exportFiles });
+});
 
 // ==========================================
 // Vite Middleware & Static Serving
